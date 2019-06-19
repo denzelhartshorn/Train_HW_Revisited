@@ -19,10 +19,10 @@ var db = firebase.database();
 $("#submitbutton").on("click", function(event){
     event.preventDefault()
 
-    var trainName =$("#trainNameinput").val()
-    var trainDestination =$("#trainDestination").val()
-    var trainTime =$("#trainTime").val()
-    var trainFrequency =$("#trainFrequency").val()
+    var trainName =$("#trainNameinput").val().trim()
+    var trainDestination =$("#trainDestination").val().trim()
+    var trainTime =$("#trainTime").val().trim()
+    var trainFrequency =$("#trainFrequency").val().trim()
 
     console.log(trainName, trainDestination, trainTime, trainFrequency)
     // crreate an obejcto with all the info
@@ -36,18 +36,19 @@ $("#submitbutton").on("click", function(event){
     
     console.log(newTrain)
     db.ref().push(newTrain)
+
+    $('#trainNameinput').val('')
+    $('#trainDestination').val('')
+    $('#trainTime').val('')
+    $('#trainFrequency').val('')
 })  
 
 // delete button
 $("#deletebutton").on("click", function(){
     reference = db.ref('/')
-
-   
     reference.once('value', function(data){
         console.log(data)    
     })
-
-
 })
 
 
@@ -60,19 +61,34 @@ $("#deletebutton").on("click", function(){
 
 
 db.ref().on("child_added", function(snap){
-
-    var trainName =snap.val().trainName
-    var trainDestination =snap.val().trainDestination
+    var trainName = snap.val().trainName
+    var trainDestination = snap.val().trainDestination
     var trainTime = snap.val().trainTime
     var trainFrequency = snap.val().trainFrequency
 
    // name / destination / frequency / next train / minutes away ohhhhhhh
+    var timeArray = trainTime.split(":")
+    var firstTrain = moment().hours(timeArray[0]).minutes(timeArray[1])
+    var max = moment.max(moment(), firstTrain)
+
+    var timeandminutes 
+    var timeArrival 
+    if(max === firstTrain){
+        timeArrival = firstTrain.format("hh:mm A")
+        timeandminutes = firstTrain.diff(moment(), "minutes")
+    } else {
+        var timeDifference = moment().diff(firstTrain, "minutes")
+        var timeRemaining = timeDifference % trainFrequency
+
+        timeandminutes = trainFrequency - timeRemaining
+        timeArrival = moment().add(timeandminutes, "m").format('hh:mm A')
+    }
 
 
    // current time - first time minutes / frequence y remaing 
 
     var trainFrequency = snap.val().trainFrequency
-    $("#outputTable > tbody").append(`<tr><td scope="col">${trainName}</td><td scope="col">${trainDestination}</td><td scope="col">${trainTime}</><td scope="col">${trainFrequency}</td></tr>`) 
+    $("#outputTable > tbody").append(`<tr><td scope="col">${trainName}</td><td scope="col">${trainDestination}</td><td scope="col">${trainTime}</><td scope="col">${trainFrequency}</td><td scope="col">${timeArrival}</td><td scope="col">${timeandminutes}</td></tr>`) 
        // send me a screen shot of what the data structure in firebase looks like
        //sent
 })
